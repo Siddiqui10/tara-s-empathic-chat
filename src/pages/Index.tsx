@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { TypingIndicator } from "@/components/TypingIndicator";
@@ -7,7 +9,8 @@ import { EmotionType } from "@/components/EmotionIndicator";
 import { AgentType } from "@/components/AgentIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Brain } from "lucide-react";
+import { Brain, LogOut } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
 
 interface Message {
   id: string;
@@ -19,18 +22,72 @@ interface Message {
 }
 
 const Index = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      message: "Hello! I'm TARA, your emotion-aware AI assistant. I'm here to understand and respond to your feelings. How are you today?",
-      isUser: false,
-      emotion: "calm",
-      agent: "emotional",
-      timestamp: new Date(),
-    },
-  ]);
+  const [user, setUser] = useState<User | null>(null);
+  const [userName, setUserName] = useState<string>("");
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check authentication
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setUser(session.user);
+        // Fetch user profile
+        setTimeout(() => {
+          fetchUserProfile(session.user.id);
+        }, 0);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setUser(session.user);
+        setTimeout(() => {
+          fetchUserProfile(session.user.id);
+        }, 0);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .single();
+
+      if (error) throw error;
+      
+      if (data) {
+        setUserName(data.display_name);
+        // Set welcome message with user's name
+        setMessages([{
+          id: "welcome",
+          message: `Hello ${data.display_name}! I'm TARA, your emotion-aware AI assistant. I'm here to understand and respond to your feelings. How are you today?`,
+          isUser: false,
+          emotion: "calm",
+          agent: "emotional",
+          timestamp: new Date(),
+        }]);
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
   const handleSendMessage = async (messageText: string) => {
     const userMessage: Message = {
@@ -46,6 +103,7 @@ const Index = () => {
     try {
       const { data, error } = await supabase.functions.invoke("chat", {
         body: {
+          userName: userName,
           messages: messages
             .filter((m) => !m.id.includes("welcome"))
             .map((m) => ({
@@ -96,7 +154,23 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">Multi-Agent Emotion AI</p>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            {userName && (
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                Hello, {userName}
+              </span>
+            )}
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="hover:bg-destructive/10 hover:text-destructive transition-colors"
+              title="Logout"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
