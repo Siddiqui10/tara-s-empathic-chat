@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json() as { messages: Message[] };
+    const { messages, userName } = await req.json() as { messages: Message[]; userName?: string };
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -24,7 +24,11 @@ serve(async (req) => {
     }
 
     // Enhanced system prompt for emotion detection and multi-agent behavior
-    const systemPrompt = `You are TARA, a sophisticated multi-agent emotion AI assistant. You have three specialized agents working together:
+    const userContext = userName ? `The user's name is ${userName}. Address them by name when appropriate to create a personal connection.` : "";
+    
+    const systemPrompt = `You are TARA (Thoughtful Affective Response Agent), a sophisticated multi-agent emotion AI assistant. ${userContext}
+
+You have three specialized agents working together:
 
 1. EMOTION AGENT: Analyzes the emotional tone of user messages
 2. CONVERSATIONAL AGENT: Provides natural, empathetic responses
