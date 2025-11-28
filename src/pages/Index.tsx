@@ -7,9 +7,10 @@ import { ChatInput } from "@/components/ChatInput";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { EmotionType } from "@/components/EmotionIndicator";
 import { AgentType } from "@/components/AgentIndicator";
+import { VoiceChat } from "@/components/VoiceChat";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, LogOut } from "lucide-react";
+import { Brain, LogOut, Sparkles } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
 interface Message {
@@ -127,6 +128,13 @@ const Index = () => {
       };
 
       setMessages((prev) => [...prev, aiMessage]);
+      
+      // Play audio response if available
+      if ((window as any).taraPlayAudio && aiMessage.message) {
+        setTimeout(() => {
+          (window as any).taraPlayAudio(aiMessage.message);
+        }, 100);
+      }
     } catch (error: any) {
       console.error("Error sending message:", error);
       
@@ -153,24 +161,32 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="min-h-screen flex flex-col gradient-secondary relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-secondary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+      </div>
+
       {/* Header */}
-      <header className="border-b border-border/50 backdrop-blur-sm bg-background/80 sticky top-0 z-10">
+      <header className="border-b border-border/50 backdrop-blur-md bg-background/70 sticky top-0 z-10 shadow-lg">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl gradient-primary glow-primary">
+            <div className="p-3 rounded-2xl gradient-primary glow-primary animate-glow relative">
               <Brain className="h-6 w-6 text-white" />
+              <Sparkles className="h-3 w-3 text-white absolute -top-1 -right-1 animate-pulse" />
             </div>
             <div>
-              <h1 className="text-2xl font-display font-bold gradient-emotion bg-clip-text text-transparent">
+              <h1 className="text-2xl font-display font-bold gradient-primary bg-clip-text text-transparent">
                 TARA
               </h1>
-              <p className="text-xs text-muted-foreground">Multi-Agent Emotion AI</p>
+              <p className="text-xs text-muted-foreground font-medium">Multi-Agent Emotion AI</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {userName && (
-              <span className="text-sm text-muted-foreground hidden sm:inline">
+              <span className="text-sm font-medium text-muted-foreground hidden sm:inline px-3 py-1.5 rounded-full bg-muted/50">
                 Hello, {userName}
               </span>
             )}
@@ -179,7 +195,7 @@ const Index = () => {
               variant="ghost"
               size="icon"
               onClick={handleLogout}
-              className="hover:bg-destructive/10 hover:text-destructive transition-colors"
+              className="hover:bg-destructive/10 hover:text-destructive transition-all duration-300 rounded-full"
               title="Logout"
             >
               <LogOut className="h-5 w-5" />
@@ -189,19 +205,29 @@ const Index = () => {
       </header>
 
       {/* Chat Area */}
-      <main className="flex-1 container mx-auto px-4 py-6 max-w-4xl">
-        <div className="flex flex-col gap-4 mb-24">
-          {messages.map((msg) => (
-            <ChatMessage key={msg.id} {...msg} />
+      <main className="flex-1 container mx-auto px-4 py-6 max-w-4xl relative z-10">
+        <div className="flex flex-col gap-4 mb-32">
+          {messages.map((msg, index) => (
+            <div key={msg.id} className="animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
+              <ChatMessage {...msg} />
+            </div>
           ))}
           {isLoading && <TypingIndicator />}
         </div>
       </main>
 
       {/* Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-border/50 backdrop-blur-sm bg-background/80">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-border/50 backdrop-blur-md bg-background/70 shadow-2xl z-20">
         <div className="container mx-auto px-4 py-4 max-w-4xl">
-          <ChatInput onSend={handleSendMessage} disabled={isLoading} />
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <ChatInput onSend={handleSendMessage} disabled={isLoading} />
+            </div>
+            <VoiceChat 
+              onTranscript={handleSendMessage} 
+              isEnabled={!isLoading}
+            />
+          </div>
         </div>
       </div>
     </div>
