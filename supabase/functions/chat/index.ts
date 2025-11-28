@@ -146,7 +146,7 @@ TARA: "That's wonderful to hear! Your positive energy is contagious. What's maki
     const data = await response.json();
     const content = data.choices[0].message.content;
 
-    // Parse response and metadata
+    // Parse response and metadata with robust error handling
     let messageText = content;
     let metadata = {
       emotion: "neutral" as const,
@@ -154,15 +154,22 @@ TARA: "That's wonderful to hear! Your positive energy is contagious. What's maki
       confidence: 0.8,
     };
 
-    const metadataMatch = content.match(/###METADATA###\s*(\{[^}]+\})/);
-    if (metadataMatch) {
-      try {
-        const parsedMetadata = JSON.parse(metadataMatch[1]);
-        metadata = { ...metadata, ...parsedMetadata };
-        messageText = content.replace(/###METADATA###\s*\{[^}]+\}/, "").trim();
-      } catch (e) {
-        console.error("Failed to parse metadata:", e);
+    if (content && typeof content === 'string') {
+      const metadataMatch = content.match(/###METADATA###\s*(\{[^}]+\})/);
+      if (metadataMatch) {
+        try {
+          const parsedMetadata = JSON.parse(metadataMatch[1]);
+          metadata = { ...metadata, ...parsedMetadata };
+          messageText = content.replace(/###METADATA###\s*\{[^}]+\}/, "").trim();
+        } catch (e) {
+          console.error("Failed to parse metadata:", e);
+          // Keep default metadata and full content
+        }
       }
+    } else {
+      // Fallback if content is not a string
+      messageText = "I apologize, but I'm having trouble formulating a response right now.";
+      console.error("Unexpected AI response format:", content);
     }
 
     return new Response(

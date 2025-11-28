@@ -116,21 +116,35 @@ const Index = () => {
 
       if (error) throw error;
 
+      // Safely parse the AI response with fallbacks
       const aiMessage: Message = {
         id: Date.now().toString() + "-ai",
-        message: data.message,
+        message: data?.message || "I apologize, but I encountered an issue processing your message. Please try again.",
         isUser: false,
-        emotion: data.emotion,
-        agent: data.agent,
+        emotion: data?.emotion || "neutral",
+        agent: data?.agent || "conversational",
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending message:", error);
+      
+      // Add error message to chat so it doesn't appear blank
+      const errorMessage: Message = {
+        id: Date.now().toString() + "-error",
+        message: "I apologize, but I'm having trouble processing your message right now. Please try again in a moment.",
+        isUser: false,
+        emotion: "neutral",
+        agent: "conversational",
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      
       toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
+        title: "Connection Error",
+        description: error?.message || "Failed to send message. Please try again.",
         variant: "destructive",
       });
     } finally {
