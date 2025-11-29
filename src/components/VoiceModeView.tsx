@@ -55,93 +55,65 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentText, setCurrentText] = useState("");
-  const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const isActiveRef = useRef(false);
   const { toast } = useToast();
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
 
-    if (!SpeechRecognition) {
-      setIsSupported(false);
-      console.error("Speech recognition not supported in this browser");
-      return;
-    }
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+        const transcript = Array.from(event.results)
+          .slice(event.resultIndex)
+          .map(result => result[0].transcript)
+          .join('');
+        
+        setCurrentText(transcript);
+        
+        // If final result, send to AI
+        if (event.results[event.resultIndex].isFinal) {
+          setIsListening(false);
+          onTranscript(transcript, true);
+          setCurrentText("");
+        }
+      };
 
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = true;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = 'en-US';
-
-    recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-      const transcript = Array.from(event.results)
-        .slice(event.resultIndex)
-        .map(result => result[0].transcript)
-        .join('');
-
-      setCurrentText(transcript);
-
-      if (event.results[event.resultIndex].isFinal) {
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
         setIsListening(false);
-        const finalTranscript = transcript.trim();
-        if (finalTranscript) {
-          onTranscript(finalTranscript, true);
+      };
+
+      recognitionRef.current.onend = () => {
+        if (isActive) {
+          // Restart recognition if still active
+          try {
+            recognitionRef.current?.start();
+            setIsListening(true);
+          } catch (e) {
+            console.error("Error restarting recognition:", e);
+          }
         }
-        setCurrentText("");
-      }
-    };
-
-    recognitionRef.current.onerror = (event: any) => {
-      console.error("Speech recognition error:", event.error);
-      setIsListening(false);
-
-      if (event.error === 'not-allowed' || event.error === 'permission-denied') {
-        toast({
-          title: "Microphone Access Denied",
-          description: "Please allow microphone access in your browser settings to use voice mode.",
-          variant: "destructive",
-        });
-        setIsActive(false);
-        isActiveRef.current = false;
-      } else if (event.error === 'no-speech') {
-        console.log("No speech detected, continuing to listen...");
-      } else if (event.error === 'aborted') {
-        console.log("Speech recognition aborted");
-      } else {
-        toast({
-          title: "Voice Recognition Error",
-          description: `Error: ${event.error}. Please try again.`,
-          variant: "destructive",
-        });
-      }
-    };
-
-    recognitionRef.current.onend = () => {
-      setIsListening(false);
-      if (isActiveRef.current) {
-        try {
-          recognitionRef.current?.start();
-          setIsListening(true);
-        } catch (e) {
-          console.error("Error restarting recognition:", e);
-        }
-      }
-    };
+      };
+    }
 
     return () => {
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort();
         } catch (e) {
-          console.error("Error aborting recognition:", e);
+          // Ignore cleanup errors
         }
       }
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
     };
-  }, [onTranscript, toast]);
+  }, [isActive, onTranscript]);
 
   useEffect(() => {
     // Setup speech synthesis callbacks
@@ -157,8 +129,8 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
     };
   }, []);
 
-  const startVoiceMode = async () => {
-    if (!isSupported || !recognitionRef.current) {
+  const startVoiceMode = () => {
+    if (!recognitionRef.current) {
       toast({
         title: "Not Supported",
         description: "Speech recognition is not supported in your browser. Try Chrome or Edge.",
@@ -168,46 +140,20 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
     }
 
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-
       recognitionRef.current.start();
       setIsActive(true);
-      isActiveRef.current = true;
       setIsListening(true);
-
-      console.log("Voice mode started successfully");
-      toast({
-        title: "Voice Mode Active",
-        description: "Speak now - TARA is listening!",
-      });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error starting voice mode:", error);
-
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        toast({
-          title: "Microphone Permission Denied",
-          description: "Please allow microphone access to use voice mode.",
-          variant: "destructive",
-        });
-      } else if (error.name === 'NotFoundError') {
-        toast({
-          title: "No Microphone Found",
-          description: "Please connect a microphone to use voice mode.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Voice Mode Error",
-          description: "Could not start voice mode. Please try again.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Voice Mode Error",
+        description: "Could not start voice mode. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   const stopVoiceMode = () => {
-    isActiveRef.current = false;
-
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
@@ -222,8 +168,6 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
     setIsListening(false);
     setIsSpeaking(false);
     setCurrentText("");
-
-    console.log("Voice mode stopped");
   };
 
   return (
@@ -268,28 +212,21 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
         {/* Status text */}
         <div className="text-center space-y-2">
           <h2 className="text-3xl font-display font-bold gradient-primary bg-clip-text text-transparent">
-            {!isActive && !isSupported && "Voice Not Supported"}
-            {!isActive && isSupported && "Start Voice Chat"}
+            {!isActive && "Start Voice Chat"}
             {isActive && isListening && "I'm Listening..."}
             {isActive && isSpeaking && "TARA is Speaking..."}
             {isActive && !isListening && !isSpeaking && "Processing..."}
           </h2>
-
+          
           {currentText && (
             <p className="text-lg text-muted-foreground animate-fade-in">
               "{currentText}"
             </p>
           )}
-
-          {!isActive && isSupported && (
+          
+          {!isActive && (
             <p className="text-muted-foreground">
               Click the button below to start a live conversation with TARA
-            </p>
-          )}
-
-          {!isActive && !isSupported && (
-            <p className="text-muted-foreground text-red-500">
-              Voice recognition is not supported in your browser. Please use Chrome or Edge.
             </p>
           )}
         </div>
@@ -298,10 +235,9 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
         <Button
           size="lg"
           onClick={isActive ? stopVoiceMode : startVoiceMode}
-          disabled={!isSupported}
           className={`rounded-full px-8 py-6 text-lg transition-all duration-300 ${
-            isActive
-              ? "bg-destructive hover:bg-destructive/90 glow-accent"
+            isActive 
+              ? "bg-destructive hover:bg-destructive/90 glow-accent" 
               : "gradient-primary hover:scale-105 glow-primary"
           }`}
         >
