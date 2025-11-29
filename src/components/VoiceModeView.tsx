@@ -55,6 +55,7 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentText, setCurrentText] = useState("");
+  const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { toast } = useToast();
 
@@ -151,7 +152,7 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
     };
   }, []);
 
-  const startVoiceMode = () => {
+  const startVoiceMode = async () => {
     if (!recognitionRef.current) {
       toast({
         title: "Not Supported",
@@ -162,18 +163,42 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
     }
 
     try {
-      console.log('Starting voice mode...');
+      // Request microphone permission explicitly
+      console.log('Requesting microphone permission...');
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('Microphone permission granted!');
+      setMicPermission('granted');
+      
+      // Stop the stream immediately as we only needed it for permission
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Now start speech recognition
+      console.log('Starting speech recognition...');
       recognitionRef.current.start();
       setIsActive(true);
-      setIsListening(true);
-      console.log('Voice mode started, listening...');
-    } catch (error) {
-      console.error("Error starting voice mode:", error);
+      console.log('Speech recognition started, waiting for voice...');
+      
       toast({
-        title: "Voice Mode Error",
-        description: "Could not start voice mode. Please try again.",
-        variant: "destructive",
+        title: "Voice Mode Active",
+        description: "Speak now - TARA is listening!",
       });
+    } catch (error: any) {
+      console.error("Error starting voice mode:", error);
+      setMicPermission('denied');
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        toast({
+          title: "Microphone Access Required",
+          description: "Please allow microphone access in your browser settings and try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Voice Mode Error",
+          description: error.message || "Could not start voice mode. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -250,7 +275,9 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
           
           {!isActive && (
             <p className="text-muted-foreground">
-              Click the button below to start a live conversation with TARA
+              {micPermission === 'denied' 
+                ? "⚠️ Microphone access denied. Please enable it in your browser settings." 
+                : "Click the button below to start a live conversation with TARA"}
             </p>
           )}
         </div>
