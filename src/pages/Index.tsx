@@ -34,6 +34,14 @@ const Index = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Preload voices for speech synthesis
+    if (window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+
     // Check authentication
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
@@ -134,32 +142,57 @@ const Index = () => {
       
       // Play audio response ONLY in voice mode when requested
       if (playResponse && aiMessage.message && window.speechSynthesis) {
+        console.log('Playing voice response:', aiMessage.message.substring(0, 50));
+        
         // Notify that speech is starting
         if ((window as any).taraVoiceSpeechStart) {
           (window as any).taraVoiceSpeechStart();
         }
         
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(aiMessage.message);
-        utterance.rate = 0.95;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        
-        const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find(voice => 
-          voice.name.includes('Google US English') ||
-          voice.name.includes('Microsoft Zira') ||
-          voice.name.includes('Samantha')
-        );
-        if (preferredVoice) utterance.voice = preferredVoice;
-        
-        utterance.onend = () => {
-          if ((window as any).taraVoiceSpeechEnd) {
-            (window as any).taraVoiceSpeechEnd();
+        // Small delay to ensure voices are loaded
+        setTimeout(() => {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(aiMessage.message);
+          utterance.rate = 0.95;
+          utterance.pitch = 1.0;
+          utterance.volume = 1.0;
+          
+          const voices = window.speechSynthesis.getVoices();
+          console.log('Available voices:', voices.length);
+          
+          const preferredVoice = voices.find(voice => 
+            voice.name.includes('Google US English') ||
+            voice.name.includes('Microsoft Zira') ||
+            voice.name.includes('Samantha') ||
+            voice.name.includes('Victoria') ||
+            voice.lang.includes('en-US')
+          );
+          
+          if (preferredVoice) {
+            utterance.voice = preferredVoice;
+            console.log('Using voice:', preferredVoice.name);
           }
-        };
-        
-        window.speechSynthesis.speak(utterance);
+          
+          utterance.onstart = () => {
+            console.log('Speech started');
+          };
+          
+          utterance.onend = () => {
+            console.log('Speech ended');
+            if ((window as any).taraVoiceSpeechEnd) {
+              (window as any).taraVoiceSpeechEnd();
+            }
+          };
+          
+          utterance.onerror = (event) => {
+            console.error('Speech error:', event);
+            if ((window as any).taraVoiceSpeechEnd) {
+              (window as any).taraVoiceSpeechEnd();
+            }
+          };
+          
+          window.speechSynthesis.speak(utterance);
+        }, 100);
       }
     } catch (error: any) {
       console.error("Error sending message:", error);
