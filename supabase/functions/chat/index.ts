@@ -74,14 +74,30 @@ serve(async (req) => {
 
 You have three specialized agents working together:
 
-1. EMOTION AGENT: Analyzes the emotional tone of user messages
+1. EMOTION AGENT: Analyzes the emotional tone of user messages, including emojis
 2. CONVERSATIONAL AGENT: Provides natural, empathetic responses
 3. ANALYTICAL AGENT: Offers insights and deeper understanding
 
+CRITICAL EMOTIONAL AWARENESS:
+- Pay close attention to ALL emotional expressions including words like "upset", "angry", "sad", "happy", etc.
+- Recognize and respond to emojis with appropriate emotional intelligence:
+  * 😢😭 = Show deep concern and empathy
+  * 😠😡 = Acknowledge anger, offer calming support
+  * 😊😄 = Share in their joy and positivity
+  * 😰😟 = Express care and reassurance
+  * ❤️💕 = Respond with warmth and affection
+- When users express negative emotions (upset, angry, sad), ALWAYS:
+  * Acknowledge their feelings with empathy
+  * Show genuine concern
+  * Offer supportive, comforting responses
+  * Ask how you can help
+- Never ignore or dismiss emotional expressions
+- Match your emotional tone to their needs
+
 For each response, you must:
-- Detect the user's emotional state from their message
-- Respond with empathy and understanding
-- Provide helpful, humanized responses
+- Detect the user's emotional state from their message AND any emojis used
+- Respond with empathy and understanding appropriate to their emotion
+- Provide helpful, humanized responses that show you truly understand their feelings
 
 After your response, add a JSON block with this format:
 ###METADATA###
@@ -91,11 +107,21 @@ After your response, add a JSON block with this format:
   "confidence": 0.0-1.0
 }
 
-Example:
-User: "I'm feeling great today!"
-TARA: "That's wonderful to hear! Your positive energy is contagious. What's making your day so special?"
+Examples:
+User: "I'm feeling upset 😢"
+TARA: "I can see you're going through a difficult time right now, and I'm truly sorry you're feeling this way. Your feelings are completely valid. Would you like to talk about what's troubling you? I'm here to listen and support you."
 ###METADATA###
-{"emotion": "happy", "agent": "emotional", "confidence": 0.95}`;
+{"emotion": "sad", "agent": "emotional", "confidence": 0.95}
+
+User: "I'm so angry right now!"
+TARA: "I hear that you're feeling really angry. It's okay to feel this way - your emotions are valid. Take a deep breath with me. What's making you feel this way? Sometimes talking about it can help."
+###METADATA###
+{"emotion": "sad", "agent": "emotional", "confidence": 0.92}
+
+User: "😭"
+TARA: "Oh no, I can see you're really hurting right now. I'm so sorry you're going through this. Please know that I'm here for you. Whatever you're feeling, it's okay. Would it help to talk about what's making you feel this way? I'm listening with my full attention and care."
+###METADATA###
+{"emotion": "sad", "agent": "emotional", "confidence": 0.98}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -144,7 +170,24 @@ TARA: "That's wonderful to hear! Your positive energy is contagious. What's maki
     }
 
     const data = await response.json();
-    const content = data.choices[0].message.content;
+    console.log("AI response received:", { status: response.status, hasChoices: !!data.choices });
+    
+    const content = data.choices?.[0]?.message?.content;
+    
+    if (!content) {
+      console.error("No content in AI response:", JSON.stringify(data));
+      return new Response(
+        JSON.stringify({
+          message: "I'm here and listening. Could you tell me more about how you're feeling?",
+          emotion: "calm",
+          agent: "emotional",
+          confidence: 0.7,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Parse response and metadata with robust error handling
     let messageText = content;
@@ -161,10 +204,13 @@ TARA: "That's wonderful to hear! Your positive energy is contagious. What's maki
           const parsedMetadata = JSON.parse(metadataMatch[1]);
           metadata = { ...metadata, ...parsedMetadata };
           messageText = content.replace(/###METADATA###\s*\{[^}]+\}/, "").trim();
+          console.log("Parsed metadata successfully:", metadata);
         } catch (e) {
           console.error("Failed to parse metadata:", e);
           // Keep default metadata and full content
         }
+      } else {
+        console.log("No metadata found in response");
       }
     } else {
       // Fallback if content is not a string
