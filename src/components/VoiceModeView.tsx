@@ -74,9 +74,11 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
           .join('');
         
         setCurrentText(transcript);
+        console.log('Speech recognized:', transcript, 'isFinal:', event.results[event.resultIndex].isFinal);
         
         // If final result, send to AI
         if (event.results[event.resultIndex].isFinal) {
+          console.log('Sending to AI:', transcript);
           setIsListening(false);
           onTranscript(transcript, true);
           setCurrentText("");
@@ -140,9 +142,11 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
     }
 
     try {
+      console.log('Starting voice mode...');
       recognitionRef.current.start();
       setIsActive(true);
       setIsListening(true);
+      console.log('Voice mode started, listening...');
     } catch (error) {
       console.error("Error starting voice mode:", error);
       toast({
