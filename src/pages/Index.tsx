@@ -7,9 +7,6 @@ import { ChatInput } from "@/components/ChatInput";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { EmotionType } from "@/components/EmotionIndicator";
 import { AgentType } from "@/components/AgentIndicator";
-import { VoiceChat } from "@/components/VoiceChat";
-import { ModeToggle } from "@/components/ModeToggle";
-import { VoiceModeView } from "@/components/VoiceModeView";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Brain, LogOut, Sparkles } from "lucide-react";
@@ -29,29 +26,17 @@ const Index = () => {
   const [userName, setUserName] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState<"text" | "voice">("text");
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Preload voices for speech synthesis
-    if (window.speechSynthesis) {
-      window.speechSynthesis.getVoices();
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-      };
-    }
-
     // Check authentication
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         navigate("/auth");
       } else {
         setUser(session.user);
-        // Fetch user profile
-        setTimeout(() => {
-          fetchUserProfile(session.user.id);
-        }, 0);
+        fetchUserProfile(session.user.id);
       }
     });
 
@@ -60,9 +45,7 @@ const Index = () => {
         navigate("/auth");
       } else {
         setUser(session.user);
-        setTimeout(() => {
-          fetchUserProfile(session.user.id);
-        }, 0);
+        fetchUserProfile(session.user.id);
       }
     });
 
@@ -101,7 +84,7 @@ const Index = () => {
     navigate("/auth");
   };
 
-  const handleSendMessage = async (messageText: string, playResponse: boolean = false) => {
+  const handleSendMessage = async (messageText: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
       message: messageText,
@@ -139,61 +122,6 @@ const Index = () => {
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-      
-      // Play audio response ONLY in voice mode when requested
-      if (playResponse && aiMessage.message && window.speechSynthesis) {
-        console.log('Playing voice response:', aiMessage.message.substring(0, 50));
-        
-        // Notify that speech is starting
-        if ((window as any).taraVoiceSpeechStart) {
-          (window as any).taraVoiceSpeechStart();
-        }
-        
-        // Small delay to ensure voices are loaded
-        setTimeout(() => {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(aiMessage.message);
-          utterance.rate = 0.95;
-          utterance.pitch = 1.0;
-          utterance.volume = 1.0;
-          
-          const voices = window.speechSynthesis.getVoices();
-          console.log('Available voices:', voices.length);
-          
-          const preferredVoice = voices.find(voice => 
-            voice.name.includes('Google US English') ||
-            voice.name.includes('Microsoft Zira') ||
-            voice.name.includes('Samantha') ||
-            voice.name.includes('Victoria') ||
-            voice.lang.includes('en-US')
-          );
-          
-          if (preferredVoice) {
-            utterance.voice = preferredVoice;
-            console.log('Using voice:', preferredVoice.name);
-          }
-          
-          utterance.onstart = () => {
-            console.log('Speech started');
-          };
-          
-          utterance.onend = () => {
-            console.log('Speech ended');
-            if ((window as any).taraVoiceSpeechEnd) {
-              (window as any).taraVoiceSpeechEnd();
-            }
-          };
-          
-          utterance.onerror = (event) => {
-            console.error('Speech error:', event);
-            if ((window as any).taraVoiceSpeechEnd) {
-              (window as any).taraVoiceSpeechEnd();
-            }
-          };
-          
-          window.speechSynthesis.speak(utterance);
-        }, 100);
-      }
     } catch (error: any) {
       console.error("Error sending message:", error);
       
@@ -244,7 +172,6 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <ModeToggle mode={mode} onModeChange={setMode} />
             {userName && (
               <span className="text-sm font-medium text-muted-foreground hidden sm:inline px-3 py-1.5 rounded-full bg-muted/50">
                 Hello, {userName}
@@ -266,39 +193,22 @@ const Index = () => {
 
       {/* Chat Area */}
       <main className="flex-1 container mx-auto px-4 py-6 max-w-4xl relative z-10">
-        {mode === "text" ? (
-          <div className="flex flex-col gap-4 mb-32">
-            {messages.map((msg, index) => (
-              <div key={msg.id} className="animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
-                <ChatMessage {...msg} />
-              </div>
-            ))}
-            {isLoading && <TypingIndicator />}
-          </div>
-        ) : (
-          <VoiceModeView 
-            onTranscript={handleSendMessage}
-            userName={userName}
-          />
-        )}
+        <div className="flex flex-col gap-4 mb-32">
+          {messages.map((msg, index) => (
+            <div key={msg.id} className="animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
+              <ChatMessage {...msg} />
+            </div>
+          ))}
+          {isLoading && <TypingIndicator />}
+        </div>
       </main>
 
-      {/* Input Area - Only show in text mode */}
-      {mode === "text" && (
-        <div className="fixed bottom-0 left-0 right-0 border-t border-border/50 backdrop-blur-md bg-background/70 shadow-2xl z-20">
-          <div className="container mx-auto px-4 py-4 max-w-4xl">
-            <div className="flex items-end gap-3">
-              <div className="flex-1">
-                <ChatInput onSend={handleSendMessage} disabled={isLoading} />
-              </div>
-              <VoiceChat 
-                onTranscript={handleSendMessage} 
-                isEnabled={!isLoading}
-              />
-            </div>
-          </div>
+      {/* Input Area */}
+      <div className="fixed bottom-0 left-0 right-0 border-t border-border/50 backdrop-blur-md bg-background/70 shadow-2xl z-20">
+        <div className="container mx-auto px-4 py-4 max-w-4xl">
+          <ChatInput onSend={handleSendMessage} disabled={isLoading} />
         </div>
-      )}
+      </div>
     </div>
   );
 };
