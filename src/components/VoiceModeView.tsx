@@ -63,9 +63,15 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
     
     if (SpeechRecognition) {
       recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
+      recognitionRef.current.continuous = false; // Changed to false for better control
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
+
+      // Set onstart handler (exists at runtime even if not in type)
+      (recognitionRef.current as any).onstart = () => {
+        console.log('Recognition started, microphone active');
+        setIsListening(true);
+      };
 
       recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = Array.from(event.results)
@@ -77,7 +83,7 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
         console.log('Speech recognized:', transcript, 'isFinal:', event.results[event.resultIndex].isFinal);
         
         // If final result, send to AI
-        if (event.results[event.resultIndex].isFinal) {
+        if (event.results[event.resultIndex].isFinal && transcript.trim()) {
           console.log('Sending to AI:', transcript);
           setIsListening(false);
           onTranscript(transcript, true);
@@ -86,19 +92,33 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
       };
 
       recognitionRef.current.onerror = (event: any) => {
-        console.error("Speech recognition error:", event.error);
+        console.error("Speech recognition error:", event.error, event);
+        if (event.error === 'not-allowed') {
+          toast({
+            title: "Microphone Access Denied",
+            description: "Please allow microphone access to use voice mode.",
+            variant: "destructive",
+          });
+        }
         setIsListening(false);
       };
 
       recognitionRef.current.onend = () => {
-        if (isActive) {
-          // Restart recognition if still active
-          try {
-            recognitionRef.current?.start();
-            setIsListening(true);
-          } catch (e) {
-            console.error("Error restarting recognition:", e);
-          }
+        console.log('Recognition ended');
+        if (isActive && !isSpeaking) {
+          // Restart recognition if still active and not speaking
+          setTimeout(() => {
+            if (isActive && recognitionRef.current) {
+              try {
+                console.log('Restarting recognition...');
+                recognitionRef.current.start();
+              } catch (e) {
+                console.error("Error restarting recognition:", e);
+              }
+            }
+          }, 100);
+        } else {
+          setIsListening(false);
         }
       };
     }
@@ -115,7 +135,7 @@ export const VoiceModeView = ({ onTranscript, userName }: VoiceModeViewProps) =>
         window.speechSynthesis.cancel();
       }
     };
-  }, [isActive, onTranscript]);
+  }, [isActive, isSpeaking, onTranscript, toast]);
 
   useEffect(() => {
     // Setup speech synthesis callbacks
