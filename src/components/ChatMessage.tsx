@@ -20,10 +20,15 @@ export const ChatMessage = ({ message, isUser, emotion, agent, timestamp }: Chat
     >
       <div
         className={cn(
-          "max-w-[80%] rounded-2xl px-4 py-3 shadow-sm",
+          "max-w-[80%] rounded-2xl px-4 py-3 shadow-sm transition-all duration-300",
           isUser
             ? "bg-primary text-primary-foreground"
-            : "bg-card border border-border"
+            : "bg-card",
+          !isUser && emotion === "happy" && "glow-happy",
+          !isUser && emotion === "sad" && "glow-sad",
+          !isUser && emotion === "excited" && "glow-excited",
+          !isUser && emotion === "calm" && "glow-calm",
+          !isUser && emotion === "neutral" && "glow-neutral"
         )}
       >
         {!isUser && agent && (
