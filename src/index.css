@@ -128,8 +128,43 @@ All colors MUST be HSL.
     box-shadow: var(--glow-accent);
   }
   
+  .glow-happy {
+    box-shadow: 0 0 20px hsla(48 96% 53% / 0.6), 0 0 40px hsla(48 96% 53% / 0.3);
+    border: 2px solid hsl(48 96% 53% / 0.5);
+  }
+  
+  .glow-sad {
+    box-shadow: 0 0 25px hsla(221 83% 60% / 0.6), 0 0 50px hsla(221 83% 60% / 0.3);
+    border: 2px solid hsl(221 83% 60% / 0.4);
+  }
+  
+  .glow-excited {
+    box-shadow: 0 0 20px hsla(340 82% 52% / 0.7), 0 0 40px hsla(340 82% 52% / 0.4);
+    border: 2px solid hsl(340 82% 52% / 0.6);
+    animation: pulse-red 1.5s ease-in-out infinite;
+  }
+  
+  .glow-calm {
+    box-shadow: 0 0 20px hsla(217 91% 60% / 0.5), 0 0 35px hsla(217 91% 60% / 0.25);
+    border: 2px solid hsl(217 91% 60% / 0.4);
+  }
+  
+  .glow-neutral {
+    box-shadow: 0 0 15px hsla(220 9% 55% / 0.4);
+    border: 2px solid hsl(220 9% 55% / 0.3);
+  }
+  
   .animate-glow {
     animation: glow 2s ease-in-out infinite;
+  }
+  
+  @keyframes pulse-red {
+    0%, 100% {
+      box-shadow: 0 0 20px hsla(340 82% 52% / 0.7), 0 0 40px hsla(340 82% 52% / 0.4);
+    }
+    50% {
+      box-shadow: 0 0 30px hsla(340 82% 52% / 0.9), 0 0 60px hsla(340 82% 52% / 0.6);
+    }
   }
   
   @keyframes glow {
