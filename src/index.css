@@ -129,33 +129,43 @@ All colors MUST be HSL.
   }
   
   .glow-happy {
-    box-shadow: 0 0 20px hsla(48 96% 53% / 0.6), 0 0 40px hsla(48 96% 53% / 0.3);
-    border: 2px solid hsl(48 96% 53% / 0.5);
+    border: 2px solid hsl(45 100% 51%);
+    box-shadow: 0 0 30px hsla(45 100% 51% / 0.8), 
+                0 0 60px hsla(45 100% 51% / 0.5),
+                inset 0 0 20px hsla(45 100% 70% / 0.2);
     transition: box-shadow 0.8s ease-in-out, border 0.8s ease-in-out;
   }
   
   .glow-sad {
-    box-shadow: 0 0 25px hsla(221 83% 60% / 0.6), 0 0 50px hsla(221 83% 60% / 0.3);
-    border: 2px solid hsl(221 83% 60% / 0.4);
+    border: 2px solid hsl(220 85% 55%);
+    box-shadow: 0 0 35px hsla(220 85% 55% / 0.8), 
+                0 0 70px hsla(220 85% 55% / 0.5),
+                inset 0 0 20px hsla(220 85% 75% / 0.2);
     transition: box-shadow 0.8s ease-in-out, border 0.8s ease-in-out;
   }
   
   .glow-excited {
-    box-shadow: 0 0 20px hsla(340 82% 52% / 0.7), 0 0 40px hsla(340 82% 52% / 0.4);
-    border: 2px solid hsl(340 82% 52% / 0.6);
+    border: 2px solid hsl(0 85% 55%);
+    box-shadow: 0 0 30px hsla(0 85% 55% / 0.9), 
+                0 0 60px hsla(0 85% 55% / 0.6),
+                inset 0 0 20px hsla(0 85% 75% / 0.2);
     animation: pulse-red 1.5s ease-in-out infinite;
     transition: border 0.8s ease-in-out;
   }
   
   .glow-calm {
-    box-shadow: 0 0 20px hsla(217 91% 60% / 0.5), 0 0 35px hsla(217 91% 60% / 0.25);
-    border: 2px solid hsl(217 91% 60% / 0.4);
+    border: 2px solid hsl(140 60% 50%);
+    box-shadow: 0 0 30px hsla(140 60% 50% / 0.8), 
+                0 0 60px hsla(140 60% 50% / 0.5),
+                inset 0 0 20px hsla(140 60% 70% / 0.2);
     transition: box-shadow 0.8s ease-in-out, border 0.8s ease-in-out;
   }
   
   .glow-neutral {
-    box-shadow: 0 0 15px hsla(220 9% 55% / 0.4);
-    border: 2px solid hsl(220 9% 55% / 0.3);
+    border: 2px solid hsl(220 10% 50%);
+    box-shadow: 0 0 20px hsla(220 10% 50% / 0.6), 
+                0 0 40px hsla(220 10% 50% / 0.3),
+                inset 0 0 15px hsla(220 10% 70% / 0.15);
     transition: box-shadow 0.8s ease-in-out, border 0.8s ease-in-out;
   }
   
@@ -165,10 +175,14 @@ All colors MUST be HSL.
   
   @keyframes pulse-red {
     0%, 100% {
-      box-shadow: 0 0 20px hsla(340 82% 52% / 0.7), 0 0 40px hsla(340 82% 52% / 0.4);
+      box-shadow: 0 0 30px hsla(0 85% 55% / 0.9), 
+                  0 0 60px hsla(0 85% 55% / 0.6),
+                  inset 0 0 20px hsla(0 85% 75% / 0.2);
     }
     50% {
-      box-shadow: 0 0 30px hsla(340 82% 52% / 0.9), 0 0 60px hsla(340 82% 52% / 0.6);
+      box-shadow: 0 0 45px hsla(0 85% 55% / 1), 
+                  0 0 90px hsla(0 85% 55% / 0.8),
+                  inset 0 0 30px hsla(0 85% 75% / 0.3);
     }
   }
   
