@@ -64,15 +64,42 @@ const Index = () => {
       
       if (data) {
         setUserName(data.display_name);
-        // Set welcome message with user's name
-        setMessages([{
+        
+        // Load previous messages from database
+        const { data: savedMessages, error: messagesError } = await supabase
+          .from("chat_messages")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: true });
+
+        if (messagesError) {
+          console.error("Error loading messages:", messagesError);
+        }
+
+        const welcomeMessage: Message = {
           id: "welcome",
           message: `Hello ${data.display_name}! I'm TARA, your emotion-aware AI assistant. I'm here to understand and respond to your feelings. How are you today?`,
           isUser: false,
           emotion: "calm",
           agent: "emotional",
           timestamp: new Date(),
-        }]);
+        };
+
+        if (savedMessages && savedMessages.length > 0) {
+          // Convert saved messages to UI format
+          const loadedMessages: Message[] = savedMessages.map(msg => ({
+            id: msg.id,
+            message: msg.content,
+            isUser: msg.is_user,
+            emotion: msg.emotion as EmotionType | undefined,
+            agent: msg.agent as AgentType | undefined,
+            timestamp: new Date(msg.created_at),
+          }));
+          setMessages([welcomeMessage, ...loadedMessages]);
+        } else {
+          // First time user, show only welcome message
+          setMessages([welcomeMessage]);
+        }
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -85,6 +112,8 @@ const Index = () => {
   };
 
   const handleSendMessage = async (messageText: string) => {
+    if (!user) return;
+
     const userMessage: Message = {
       id: Date.now().toString(),
       message: messageText,
@@ -96,6 +125,21 @@ const Index = () => {
     setIsLoading(true);
 
     try {
+      // Save user message to database
+      const { error: saveUserError } = await supabase
+        .from("chat_messages")
+        .insert({
+          user_id: user.id,
+          content: messageText,
+          is_user: true,
+          emotion: null,
+          agent: null,
+        });
+
+      if (saveUserError) {
+        console.error("Error saving user message:", saveUserError);
+      }
+
       const { data, error } = await supabase.functions.invoke("chat", {
         body: {
           userName: userName,
@@ -122,6 +166,21 @@ const Index = () => {
       };
 
       setMessages((prev) => [...prev, aiMessage]);
+
+      // Save AI message to database
+      const { error: saveAiError } = await supabase
+        .from("chat_messages")
+        .insert({
+          user_id: user.id,
+          content: aiMessage.message,
+          is_user: false,
+          emotion: aiMessage.emotion || null,
+          agent: aiMessage.agent || null,
+        });
+
+      if (saveAiError) {
+        console.error("Error saving AI message:", saveAiError);
+      }
     } catch (error: any) {
       console.error("Error sending message:", error);
       
