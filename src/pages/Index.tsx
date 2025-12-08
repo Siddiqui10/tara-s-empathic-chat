@@ -78,7 +78,7 @@ const Index = () => {
 
         const welcomeMessage: Message = {
           id: "welcome",
-          message: `Hello ${data.display_name}! I'm TARA, your emotion-aware AI assistant. I'm here to understand and respond to your feelings. How are you today?`,
+          message: `Hello ${data.display_name}! I'm ROSANTRA, your emotion-aware AI assistant. I'm here to understand and respond to your feelings. How are you today?`,
           isUser: false,
           emotion: "calm",
           agent: "emotional",
@@ -225,7 +225,7 @@ const Index = () => {
             </div>
             <div>
               <h1 className="text-2xl font-display font-bold gradient-primary bg-clip-text text-transparent">
-                TARA
+                ROSANTRA
               </h1>
               <p className="text-xs text-muted-foreground font-medium">Multi-Agent Emotion AI</p>
             </div>

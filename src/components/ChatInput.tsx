@@ -32,7 +32,7 @@ export const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Share your thoughts with TARA..."
+        placeholder="Share your thoughts with ROSANTRA..."
         disabled={disabled}
         className="min-h-[52px] max-h-32 resize-none rounded-2xl bg-card border-border focus-visible:ring-primary"
         rows={1}
