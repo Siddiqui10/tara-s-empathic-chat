@@ -67,7 +67,7 @@ const Auth = () => {
 
       toast({
         title: "Account created!",
-        description: "Welcome to TARA. You're now signed in.",
+        description: "Welcome to ROSANTRA. You're now signed in.",
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -104,7 +104,7 @@ const Auth = () => {
 
       toast({
         title: "Welcome back!",
-        description: "You're now signed in to TARA.",
+        description: "You're now signed in to ROSANTRA.",
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -136,7 +136,7 @@ const Auth = () => {
           </div>
           <div>
             <CardTitle className="text-3xl font-display gradient-emotion bg-clip-text text-transparent">
-              Welcome to TARA
+              Welcome to ROSANTRA
             </CardTitle>
             <CardDescription className="text-base mt-2">
               Your personal emotion-aware AI assistant
