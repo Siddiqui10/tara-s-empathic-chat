@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import taraLogo from "@/assets/tara-logo.png";
 import { z } from "zod";
 
 const signupSchema = z.object({
@@ -130,9 +131,7 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-elegant border-border/50">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
-            <div className="p-3 rounded-2xl gradient-primary glow-primary">
-              <Brain className="h-8 w-8 text-white" />
-            </div>
+            <img src={taraLogo} alt="TARA Logo" className="h-16 w-16 rounded-2xl shadow-lg" />
           </div>
           <div>
             <CardTitle className="text-3xl font-display gradient-emotion bg-clip-text text-transparent">

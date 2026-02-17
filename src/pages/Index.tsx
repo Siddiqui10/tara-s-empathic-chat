@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import taraLogo from "@/assets/tara-logo.png";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { EmotionType } from "@/components/EmotionIndicator";
 import { AgentType } from "@/components/AgentIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, LogOut, Sparkles } from "lucide-react";
+import { LogOut, Sparkles } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
 interface Message {
@@ -219,9 +220,8 @@ const Index = () => {
       <header className="border-b border-border/50 backdrop-blur-md bg-background/70 sticky top-0 z-10 shadow-lg">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl gradient-primary glow-primary animate-glow relative">
-              <Brain className="h-6 w-6 text-white" />
-              <Sparkles className="h-3 w-3 text-white absolute -top-1 -right-1 animate-pulse" />
+            <div className="p-1.5 rounded-2xl glow-primary animate-glow relative">
+              <img src={taraLogo} alt="TARA Logo" className="h-10 w-10 rounded-xl" />
             </div>
             <div>
               <h1 className="text-2xl font-display font-bold gradient-primary bg-clip-text text-transparent">
